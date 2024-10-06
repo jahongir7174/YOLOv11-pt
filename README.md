@@ -23,14 +23,14 @@ pip install tqdm
 
 ### Results
 
-| Version | Epochs | Box mAP | Download |
-|:-------:|:------:|--------:|---------:|
-|  v11_n  |  600   |    38.6 |        - |
-| v11_n*  |   -    |    39.2 |        - |
-| v11_s*  |   -    |    46.5 |        - |
-| v11_m*  |   -    |    51.2 |        - |
-| v11_l*  |   -    |    53.0 |        - |
-| v11_x*  |   -    |    54.3 |        - |
+| Version | Epochs | Box mAP |                                                                              Download |
+|:-------:|:------:|--------:|--------------------------------------------------------------------------------------:|
+|  v11_n  |  600   |    38.6 |                                                            [Model](./weights/best.pt) |
+| v11_n*  |   -    |    39.2 | [Model](https://github.com/jahongir7174/YOLOv11-pt/releases/download/v0.0.1/v11_n.pt) |
+| v11_s*  |   -    |    46.5 | [Model](https://github.com/jahongir7174/YOLOv11-pt/releases/download/v0.0.1/v11_s.pt) |
+| v11_m*  |   -    |    51.2 | [Model](https://github.com/jahongir7174/YOLOv11-pt/releases/download/v0.0.1/v11_m.pt) |
+| v11_l*  |   -    |    53.0 | [Model](https://github.com/jahongir7174/YOLOv11-pt/releases/download/v0.0.1/v11_l.pt) |
+| v11_x*  |   -    |    54.3 | [Model](https://github.com/jahongir7174/YOLOv11-pt/releases/download/v0.0.1/v11_x.pt) |
 
 ```
  Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.386
