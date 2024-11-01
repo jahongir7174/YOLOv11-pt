@@ -115,6 +115,8 @@ def train(args, params):
 
                 # Optimize
                 if step % accumulate == 0:
+                    # amp_scale.unscale_(optimizer)  # unscale gradients
+                    # util.clip_gradients(model)  # clip gradients
                     amp_scale.step(optimizer)  # optimizer.step
                     amp_scale.update()
                     optimizer.zero_grad()

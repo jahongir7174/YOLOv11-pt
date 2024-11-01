@@ -337,6 +337,11 @@ def strip_optimizer(filename):
     torch.save(x, f=filename)
 
 
+def clip_gradients(model, max_norm=10.0):
+    parameters = model.parameters()
+    torch.nn.utils.clip_grad_norm_(parameters, max_norm=max_norm)
+
+
 def load_weight(model, ckpt):
     dst = model.state_dict()
     src = torch.load(ckpt)['model'].float().cpu()
