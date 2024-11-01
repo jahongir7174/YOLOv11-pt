@@ -60,7 +60,7 @@ def train(args, params):
                                                           output_device=args.local_rank)
 
     best = 0
-    amp_scale = torch.cuda.amp.GradScaler()
+    amp_scale = torch.amp.GradScaler()
     criterion = util.ComputeLoss(model, params)
 
     with open('weights/step.csv', 'w') as log:
@@ -95,7 +95,7 @@ def train(args, params):
                 samples = samples.cuda().float() / 255
 
                 # Forward
-                with torch.cuda.amp.autocast():
+                with torch.amp.autocast('cuda'):
                     outputs = model(samples)  # forward
                     loss_box, loss_cls, loss_dfl = criterion(outputs, targets)
 
@@ -177,7 +177,9 @@ def test(args, params, model=None):
     loader = data.DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4,
                              pin_memory=True, collate_fn=Dataset.collate_fn)
 
-    if model is None:
+    plot = False
+    if not model:
+        plot = True
         model = torch.load(f='./weights/best.pt', map_location='cuda')
         model = model['model'].float().fuse()
 
@@ -229,7 +231,7 @@ def test(args, params, model=None):
     # Compute metrics
     metrics = [torch.cat(x, dim=0).cpu().numpy() for x in zip(*metrics)]  # to numpy
     if len(metrics) and metrics[0].any():
-        tp, fp, m_pre, m_rec, map50, mean_ap = util.compute_ap(*metrics)
+        tp, fp, m_pre, m_rec, map50, mean_ap = util.compute_ap(*metrics, plot=plot, names=params["names"])
     # Print results
     print(('%10s' + '%10.3g' * 4) % ('', m_pre, m_rec, map50, mean_ap))
     # Return results

@@ -177,7 +177,52 @@ def smooth(y, f=0.1):
     return numpy.convolve(yp, numpy.ones(nf) / nf, mode='valid')  # y-smoothed
 
 
-def compute_ap(tp, conf, output, target, eps=1E-16):
+def plot_pr_curve(px, py, ap, names, save_dir):
+    from matplotlib import pyplot
+    fig, ax = pyplot.subplots(1, 1, figsize=(9, 6), tight_layout=True)
+    py = numpy.stack(py, axis=1)
+
+    if 0 < len(names) < 21:  # display per-class legend if < 21 classes
+        for i, y in enumerate(py.T):
+            ax.plot(px, y, linewidth=1, label=f"{names[i]} {ap[i, 0]:.3f}")  # plot(recall, precision)
+    else:
+        ax.plot(px, py, linewidth=1, color="grey")  # plot(recall, precision)
+
+    ax.plot(px, py.mean(1), linewidth=3, color="blue", label="all classes %.3f mAP@0.5" % ap[:, 0].mean())
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+    ax.set_title("Precision-Recall Curve")
+    fig.savefig(save_dir, dpi=250)
+    pyplot.close(fig)
+
+
+def plot_curve(px, py, names, save_dir, x_label="Confidence", y_label="Metric"):
+    from matplotlib import pyplot
+
+    figure, ax = pyplot.subplots(1, 1, figsize=(9, 6), tight_layout=True)
+
+    if 0 < len(names) < 21:  # display per-class legend if < 21 classes
+        for i, y in enumerate(py):
+            ax.plot(px, y, linewidth=1, label=f"{names[i]}")  # plot(confidence, metric)
+    else:
+        ax.plot(px, py.T, linewidth=1, color="grey")  # plot(confidence, metric)
+
+    y = smooth(py.mean(0), f=0.05)
+    ax.plot(px, y, linewidth=3, color="blue", label=f"all classes {y.max():.3f} at {px[y.argmax()]:.3f}")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
+    ax.set_title(f"{y_label}-Confidence Curve")
+    figure.savefig(save_dir, dpi=250)
+    pyplot.close(figure)
+
+
+def compute_ap(tp, conf, output, target, plot=False, names=(), eps=1E-16):
     """
     Compute the average precision, given the recall and precision curves.
     Source: https://github.com/rafaelpadilla/Object-Detection-Metrics.
@@ -195,7 +240,7 @@ def compute_ap(tp, conf, output, target, eps=1E-16):
 
     # Find unique classes
     unique_classes, nt = numpy.unique(target, return_counts=True)
-    nc = unique_classes.shape[0]  # number of classes
+    nc = unique_classes.shape[0]  # number of classes, number of detections
 
     # Create Precision-Recall curve and compute AP for each class
     p = numpy.zeros((nc, 1000))
@@ -233,11 +278,19 @@ def compute_ap(tp, conf, output, target, eps=1E-16):
             # Integrate area under curve
             x = numpy.linspace(start=0, stop=1, num=101)  # 101-point interp (COCO)
             ap[ci, j] = numpy.trapz(numpy.interp(x, m_rec, m_pre), x)  # integrate
+            if plot and j == 0:
+                py.append(numpy.interp(px, m_rec, m_pre))  # precision at mAP@0.5
 
     # Compute F1 (harmonic mean of precision and recall)
     f1 = 2 * p * r / (p + r + eps)
-
-    i = smooth(f1.mean(0)).argmax()  # max F1 index
+    if plot:
+        names = dict(enumerate(names))  # to dict
+        names = [v for k, v in names.items() if k in unique_classes]  # list: only classes that have data
+        plot_pr_curve(px, py, ap, names, save_dir="./weights/PR_curve.png")
+        plot_curve(px, f1, names, save_dir="./weights/F1_curve.png", y_label="F1")
+        plot_curve(px, p, names, save_dir="./weights/P_curve.png", y_label="Precision")
+        plot_curve(px, r, names, save_dir="./weights/R_curve.png", y_label="Recall")
+    i = smooth(f1.mean(0), 0.1).argmax()  # max F1 index
     p, r, f1 = p[:, i], r[:, i], f1[:, i]
     tp = (r * nt).round()  # true positives
     fp = (tp / (p + eps) - tp).round()  # false positives
