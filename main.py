@@ -34,8 +34,8 @@ def train(args, params):
     ema = util.EMA(model) if args.local_rank == 0 else None
 
     filenames = []
-    with open(f'{data_dir}/train2017.txt') as reader:
-        for filename in reader.readlines():
+    with open(f'{data_dir}/train2017.txt') as f:
+        for filename in f.readlines():
             filename = os.path.basename(filename.rstrip())
             filenames.append(f'{data_dir}/images/train2017/' + filename)
 
@@ -164,14 +164,12 @@ def train(args, params):
         util.strip_optimizer('./weights/best.pt')  # strip optimizers
         util.strip_optimizer('./weights/last.pt')  # strip optimizers
 
-    torch.cuda.empty_cache()
-
 
 @torch.no_grad()
 def test(args, params, model=None):
     filenames = []
-    with open(f'{data_dir}/val2017.txt') as reader:
-        for filename in reader.readlines():
+    with open(f'{data_dir}/val2017.txt') as f:
+        for filename in f.readlines():
             filename = os.path.basename(filename.rstrip())
             filenames.append(f'{data_dir}/images/val2017/' + filename)
 
@@ -294,6 +292,11 @@ def main():
         train(args, params)
     if args.test:
         test(args, params)
+
+    # Clean
+    if args.distributed:
+        torch.distributed.destroy_process_group()
+    torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
